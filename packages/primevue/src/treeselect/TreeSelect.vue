@@ -458,13 +458,39 @@ export default {
             }
         },
         isSelected(node, keys) {
-            return this.selectionMode === 'checkbox' ? keys[node.key] && keys[node.key].checked : keys[node.key];
+            if (this.selectionMode === 'checkbox') {
+                const entry = keys[node.key];
+                return entry ? (typeof entry === 'object' ? entry.checked : entry) : false;
+            } else {
+                return !!keys[node.key];
+            }
         },
         updateTreeState() {
-            let keys = { ...this.d_value };
+            let keys = {};
 
-            if (keys && this.options) {
-                this.updateTreeBranchState(null, null, keys);
+            if (this.d_value !== null && this.d_value !== undefined) {
+                // Array（['0','0-1','1']）
+                if (Array.isArray(this.d_value)) {
+                    this.d_value.forEach(key => {
+                        keys[key] = this.selectionMode === 'checkbox'
+                            ? { checked: true, partialChecked: false }
+                            : true;
+                    });
+                }
+                // String（'3c63f912-ce23-4f55-8022-dba3ea06fa81'）
+                else if (typeof this.d_value === 'string') {
+                    keys[this.d_value] = this.selectionMode === 'checkbox'
+                        ? { checked: true, partialChecked: false }
+                        : true;
+                }
+                // Object（{ '0': { checked: true, partialChecked: false }, ... }）
+                else if (typeof this.d_value === 'object' && !Array.isArray(this.d_value)) {
+                    keys = { ...this.d_value };
+                }
+            }
+
+            if (Object.keys(keys).length && this.options) {
+                this.updateTreeBranchState(null, [], keys);
             }
         },
         updateTreeBranchState(node, path, keys) {
